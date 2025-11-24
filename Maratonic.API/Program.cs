@@ -1,3 +1,6 @@
+using Microsoft.EntityFrameworkCore; // AddDbContext için
+using Pomelo.EntityFrameworkCore.MySql.Infrastructure; // UseMySql ve ServerVersion için
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.

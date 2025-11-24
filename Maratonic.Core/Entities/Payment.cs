@@ -1,19 +1,16 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using Microsoft.EntityFrameworkCore; // [Index] için gerekli
 
 namespace Maratonic.Core.Entities
 {
     [Table("Payments")]
-    [Index(nameof(TransactionId), IsUnique = true)] // transaction_id varchar [unique]
     public class Payment
     {
         [Key]
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)] // payment_id serial [pk]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int PaymentId { get; set; }
 
-        // registration_id int [unique, not null, ref: > Registrations.registration_id]
-        // [Unique] kısıtlamasını DbContext'te zorunlu kılacağız
+        // Foreign Key
         [Required]
         public int RegistrationId { get; set; }
         [ForeignKey("RegistrationId")]
@@ -24,11 +21,11 @@ namespace Maratonic.Core.Entities
         public decimal Amount { get; set; }
 
         [Required]
-        public string TransactionId { get; set; }
+        public string TransactionId { get; set; } // Infrastructure'da Unique Index eklenecek
 
         public DateTime PaymentDate { get; set; } = DateTime.UtcNow;
 
-        public string ProviderResponse { get; set; } // json tipindeki veri
+        public string ProviderResponse { get; set; }
 
         public bool IsSuccessful { get; set; } = false;
     }

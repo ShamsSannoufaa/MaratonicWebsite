@@ -8,7 +8,7 @@ namespace Maratonic.Core.Entities
     public class Race
     {
         [Key]
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)] // race_id serial [pk]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int RaceId { get; set; }
 
         [Required]
@@ -18,7 +18,7 @@ namespace Maratonic.Core.Entities
         public DateTime Date { get; set; }
 
         [Required]
-        [Column(TypeName = "decimal(18, 2)")] // registration_fee decimal [not null]
+        [Column(TypeName = "decimal(18, 2)")]
         public decimal RegistrationFee { get; set; }
 
         public string Location { get; set; }
@@ -27,14 +27,14 @@ namespace Maratonic.Core.Entities
 
         public RaceStatus Status { get; set; } = RaceStatus.Upcoming;
 
-        // Foreign Key: created_by int [ref: > Users.user_id]
+        // Foreign Key
         public int CreatedByUserId { get; set; }
         [ForeignKey("CreatedByUserId")]
-        public User CreatedBy { get; set; } // Navigasyon Özelliği
+        public User CreatedBy { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-        // İlişkiler:
+        // Navigasyon Özellikleri
         public ICollection<Registration> Registrations { get; set; }
     }
 }

@@ -7,9 +7,10 @@ namespace Maratonic.Core.Entities
     public class Notification
     {
         [Key]
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)] // notification_id serial [pk]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int NotificationId { get; set; }
 
+        // Foreign Key
         [Required]
         public int UserId { get; set; }
         [ForeignKey("UserId")]
@@ -19,7 +20,7 @@ namespace Maratonic.Core.Entities
         public string Type { get; set; }
         public string Subject { get; set; }
         public string Body { get; set; }
-        public DateTime? SentAt { get; set; } // nullable timestamp
+        public DateTime? SentAt { get; set; }
         public bool IsSent { get; set; } = false;
     }
 }
