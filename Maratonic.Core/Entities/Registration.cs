@@ -22,8 +22,9 @@ namespace Maratonic.Core.Entities
 
         public PaymentStatus PaymentStatus { get; set; } = PaymentStatus.Pending;
 
-        [ForeignKey("UserId")]
-        public ApplicationUser User { get; set; }
+        //[ForeignKey("UserId")]
+        //public ApplicationUser User { get; set; }
+        
 
         [ForeignKey("RaceId")]
         public Race Race { get; set; }

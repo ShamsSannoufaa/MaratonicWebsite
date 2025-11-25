@@ -1,7 +1,9 @@
-﻿using System;
-namespace Maratonic.Core.Interfaces;
+﻿using Maratonic.Core.Entities;
 
-public interface IPaymentsService
+namespace Maratonic.Core.Interfaces
 {
-	
+    public interface IPaymentsService
+    {
+        Task<Payment> CreatePaymentAsync(int registrationId, decimal amount);
+    }
 }

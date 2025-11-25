@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Maratonic.Core.Enums;
+using System;
 namespace Maratonic.API.DTOs
 {
     public class RegistrationRequestDto

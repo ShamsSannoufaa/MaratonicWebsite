@@ -1,14 +1,11 @@
-﻿using System;
+﻿using Maratonic.Core.Entities;
 
-/// <summary>
-/// Summary description for Class1
-/// </summary>
-public interface IRegistrationsService
+namespace Maratonic.Core.Interfaces
 {
-	public IRegistrationsService()
-	{
-		//
-		// TODO: Add constructor logic here
-		//
-	}
+    public interface IRegistrationsService
+    {
+        Task<Registration?> RegisterAsync(string userId, int raceId);
+        Task<List<Registration>> GetUserRegistrationsAsync(string userId);
+    }
 }
+

@@ -2,8 +2,9 @@
 {
     public enum RaceStatus
     {
-        Upcoming,
-        Completed,
-        Cancelled
+        Upcoming = 0,
+        Open = 1,
+        Closed = 2,
+        Finished = 3
     }
 }

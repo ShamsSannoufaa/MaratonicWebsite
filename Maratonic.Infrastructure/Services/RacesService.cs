@@ -1,7 +1,7 @@
-﻿using Maratonic.Core.Entities;
+﻿using Microsoft.EntityFrameworkCore;
+using Maratonic.Core.Entities;
 using Maratonic.Core.Interfaces;
-using Microsoft.EntityFrameworkCore;
-
+using Maratonic.Infrastructure;
 namespace Maratonic.Infrastructure.Services
 {
     public class RacesService : IRacesService
@@ -13,17 +13,14 @@ namespace Maratonic.Infrastructure.Services
             _context = context;
         }
 
-        public async Task<List<Race>> GetAllRacesAsync()
+        public async Task<IEnumerable<Race>> GetAllRacesAsync()
         {
-            return await _context.Races
-                .OrderBy(r => r.StartDate)
-                .ToListAsync();
+            return await _context.Races.ToListAsync();
         }
 
         public async Task<Race?> GetRaceByIdAsync(int raceId)
         {
-            return await _context.Races
-                .FirstOrDefaultAsync(r => r.RaceId == raceId);
+            return await _context.Races.FirstOrDefaultAsync(r => r.RaceId == raceId);
         }
 
         public async Task<Race> CreateRaceAsync(Race race)
@@ -40,13 +37,22 @@ namespace Maratonic.Infrastructure.Services
             if (existing == null)
                 return false;
 
-            existing.Title = race.Title;
-            existing.Location = race.Location;
-            existing.StartDate = race.StartDate;
-            existing.Description = race.Description;
-            existing.Price = race.Price;
-
+            _context.Entry(existing).CurrentValues.SetValues(race);
             await _context.SaveChangesAsync();
+
+            return true;
+        }
+
+        public async Task<bool> DeleteRaceAsync(int raceId)
+        {
+            var race = await _context.Races.FindAsync(raceId);
+
+            if (race == null)
+                return false;
+
+            _context.Races.Remove(race);
+            await _context.SaveChangesAsync();
+
             return true;
         }
     }

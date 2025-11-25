@@ -14,8 +14,8 @@ namespace Maratonic.Core.Entities
         [Required]
         public string UserId { get; set; }  // <-- int → string yapıldı
 
-        [ForeignKey("UserId")]
-        public ApplicationUser User { get; set; }
+        //[ForeignKey("UserId")]
+        //public ApplicationUser User { get; set; }
 
         [Required]
         public string Type { get; set; }

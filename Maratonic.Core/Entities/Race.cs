@@ -31,8 +31,8 @@ namespace Maratonic.Core.Entities
         [Required]
         public string CreatedByUserId { get; set; }
 
-        [ForeignKey(nameof(CreatedByUserId))]
-        public ApplicationUser CreatedBy { get; set; }
+        //[ForeignKey(nameof(CreatedByUserId))]
+        //public ApplicationUser CreatedBy { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
