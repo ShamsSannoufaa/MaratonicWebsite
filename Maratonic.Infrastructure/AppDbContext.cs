@@ -1,54 +1,57 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Maratonic.Core.Entities; // Entity sınıflarınızı import ediyoruz
+using Maratonic.Core.Entities;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore; // Identity için kritik
 
 namespace Maratonic.Infrastructure
 {
-    // AppDbContext, DbContext'ten miras alır ve EF Core'un ana sınıfıdır.
-    public class AppDbContext : DbContext
+    // YENİ HALİ: IdentityDbContext'ten miras alarak AspNetUsers, AspNetRoles tablolarını oluşturur.
+    public class AppDbContext : IdentityDbContext<ApplicationUser>
     {
-        // Constructor, AppDbContext'i projenin başlangıcında yapılandırmak için kullanılır.
         public AppDbContext(DbContextOptions<AppDbContext> options)
             : base(options)
         {
         }
 
-        // DBML'deki her tablo için bir DbSet (Veritabanı kümesi) tanımlanması
-        public DbSet<User> Users { get; set; }
+        // Diğer DbSet'ler (Identity tabloları otomatik oluşturulur)
+        // Kullanıcı tablosu ApplicationUser tarafından sağlandığı için artık bu DbSet'e gerek yoktur.
         public DbSet<Race> Races { get; set; }
         public DbSet<Registration> Registrations { get; set; }
         public DbSet<Payment> Payments { get; set; }
         public DbSet<Notification> Notifications { get; set; }
 
-
-        // Fluent API ile özel kısıtlamaları ve ilişkileri yapılandırma
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            // 1. Kayıtlar için Bileşik Tekil Kısıtlama: 
-            // DBML'deki Index kısıtlamasını uyguluyoruz: (user_id, race_id) [unique]
+            // Identity'ye özgü tabloları oluşturması için bu çağrı ZORUNLUDUR.
+            base.OnModelCreating(modelBuilder);
+
+            // =============================================
+            // AKIŞKAN API (FLUENT API) KURALLARI
+            // =============================================
+
+            // 1. Kayıtlar için Bileşik Tekil Kısıtlama: (user_id, race_id) [unique]
             modelBuilder.Entity<Registration>()
                 .HasIndex(r => new { r.UserId, r.RaceId })
                 .IsUnique();
 
-            // 2. Ödeme için Tekillik Kısıtlaması:
-            // Bir Registration'ın sadece bir Payment'ı olabilir (Bire-Bir ilişki).
+            // 2. Ödeme için Bire-Bir İlişki Kısıtlaması (Unique Foreign Key):
             modelBuilder.Entity<Payment>()
-                .HasOne(p => p.Registration)           // Payment, bir Registration'a sahip
-                .WithOne(r => r.PaymentTransaction)    // Registration, bir Payment'a sahip (Registration.cs'de tanımladık)
-                .HasForeignKey<Payment>(p => p.RegistrationId) // Foreign Key, Payment tablosunda
-                .IsRequired();                         // registration_id [unique, not null] kısıtlaması
+                .HasOne(p => p.Registration)
+                .WithOne(r => r.PaymentTransaction)
+                .HasForeignKey<Payment>(p => p.RegistrationId)
+                .IsRequired();
 
-            // 3. User Entity'sindeki ilişkiyi düzeltme (Self-Reference için)
-            // CreatedByUserId foreign key'ini doğru bağlama
+            // 3. Race Entity'sini ApplicationUser (AspNetUsers) ile bağlama
+            // CreatedByUserId foreign key'ini doğru bağlama (Yönetici)
             modelBuilder.Entity<Race>()
-                .HasOne(r => r.CreatedBy)
-                .WithMany(u => u.CreatedRaces)
+                .HasOne(r => r.CreatedBy) // Race.CreatedBy
+                .WithMany() // ApplicationUser'da bu navigasyon özelliği tanımlı değildir, bu yüzden WithMany() kullanıyoruz
                 .HasForeignKey(r => r.CreatedByUserId)
-                .OnDelete(DeleteBehavior.Restrict); // Yönetici silinirse yarışlar silinmesin.
+                .OnDelete(DeleteBehavior.Restrict);
 
-            // 4. Diğer Entity'lerdeki tekil kısıtlamaları uyguluyoruz (Data Annotations ile yapılmayanlar)
-            // User.Email'i zaten [Index] ile User.cs'de halletmiştik.
-
-            base.OnModelCreating(modelBuilder);
+            // 4. Payment.TransactionId için Tekil Kısıtlama
+            modelBuilder.Entity<Payment>()
+                .HasIndex(p => p.TransactionId)
+                .IsUnique();
         }
     }
 }

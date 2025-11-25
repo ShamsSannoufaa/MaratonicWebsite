@@ -13,6 +13,7 @@ namespace Maratonic.Core.Entities
         // Foreign Key
         [Required]
         public int RegistrationId { get; set; }
+
         [ForeignKey("RegistrationId")]
         public Registration Registration { get; set; }
 
@@ -21,7 +22,7 @@ namespace Maratonic.Core.Entities
         public decimal Amount { get; set; }
 
         [Required]
-        public string TransactionId { get; set; } // Infrastructure'da Unique Index eklenecek
+        public string TransactionId { get; set; } // Unique index Infrastructure’da oluşturulacak
 
         public DateTime PaymentDate { get; set; } = DateTime.UtcNow;
 

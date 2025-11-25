@@ -1,62 +1,121 @@
-// Gerekli using'ler: Tüm derleme hatalarýný (CS0234, CS1061) çözer
-using Microsoft.EntityFrameworkCore;
-using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
+ï»¿using Microsoft.EntityFrameworkCore;
+using Maratonic.Infrastructure;
+using Maratonic.Core.Entities;
 using Microsoft.AspNetCore.Identity;
-using Maratonic.Infrastructure; // AppDbContext'inizin olduðu namespace
-using Maratonic.Core.Interfaces; // Sizin Servis Arayüzlerinizin olduðu namespace
-using Maratonic.Infrastructure.Services; // Servislerinizin olduðu namespace (örnek)
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// ======================================================================
+// 1. SERVICES
+// ======================================================================
 
 // 1. Core Servisleri ve Dependency Injection
 builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
 
-// Connection String'i okuma
+// Swagger + JWT Destek
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Maratonic API", Version = "v1" });
+
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        In = ParameterLocation.Header,
+        Description = "JWT token'Ä±nÄ±zÄ± 'Bearer <token>' ÅŸeklinde girin",
+        Name = "Authorization",
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer"
+    });
+
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
+
+// ======================================================================
+// DATABASE
+// ======================================================================
+
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
-// 2. DbContext ve MySQL Baðlantýsý (Migrations Sorununu Çözen Ayarla)
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseMySql(
         connectionString,
-        ServerVersion.AutoDetect(connectionString),
-        // SABAHTAN BERÝ SORUN ÇIKARAN AYAR:
-        // EF Core'a Migrations dosyalarýný Infrastructure projesinde aramasýný söyler.
-        mySqlOptions => mySqlOptions.MigrationsAssembly("Maratonic.Infrastructure")
+        ServerVersion.AutoDetect(connectionString)
     )
 );
 
-// 3. Identity (Kullanýcý Yönetimi) Servisini Ekleme (Arkadaþýnýzýn Ýþi Ýçin)
-builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = false)
-    .AddEntityFrameworkStores<AppDbContext>();
+// ======================================================================
+// IDENTITY
+// ======================================================================
 
-// 4. Servis/Repository Kayýtlarý (Sizin CRUD Operasyonlarýnýz Ýçin)
-// Bu, Controller'larýn Repository'leri kullanmasýný saðlar.
-builder.Services.AddScoped<IRacesService, RacesService>();
-builder.Services.AddScoped<IRegistrationsService, RegistrationsService>();
-builder.Services.AddScoped<IUsersService, UsersService>();  
-builder.Services.AddScoped<IPaymentsService, PaymentsService>();
-builder.Services.AddScoped<INotificationsService, NotificationsService>();
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
+    .AddEntityFrameworkStores<AppDbContext>()
+    .AddDefaultTokenProviders();
 
-
-// 5. CORS (Angular'ýn API'a Eriþimi Ýçin)
-builder.Services.AddCors(options =>
+// Identity password rules
+builder.Services.Configure<IdentityOptions>(options =>
 {
-    options.AddPolicy(name: "AngularPolicy",
-        policy =>
-        {
-            policy.WithOrigins("http://localhost:4200")
-                   .AllowAnyHeader()
-                   .AllowAnyMethod();
-        });
+    options.Password.RequireDigit = false;
+    options.Password.RequireUppercase = false;
+    options.Password.RequireLowercase = false;
+    options.Password.RequireNonAlphanumeric = false;
+    options.Password.RequiredLength = 6;
 });
+
+// ======================================================================
+// JWT AUTHENTICATION
+// ======================================================================
+
+var jwtSettings = builder.Configuration.GetSection("Jwt");
+var secretKey = jwtSettings["Secret"];
+
+if (string.IsNullOrEmpty(secretKey))
+    throw new Exception("âš  JWT Secret boÅŸ! appsettings.json kontrol et.");
+
+var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+
+        ValidIssuer = jwtSettings["Issuer"],
+        ValidAudience = jwtSettings["Audience"],
+        IssuerSigningKey = key
+    };
+});
+
+// ======================================================================
+// 2. MIDDLEWARE
+// ======================================================================
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -65,11 +124,48 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// CORS, Authentication ve Authorization Middleware'lerini ekle
-app.UseCors("AngularPolicy");
-app.UseAuthentication(); // Önce Auth çalýþmalý
-app.UseAuthorization(); // Sonra Yetkilendirme çalýþmalý
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapControllers();
 
+// ======================================================================
+// ROLE + ADMIN SEED
+// ======================================================================
+using (var scope = app.Services.CreateScope())
+{
+    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+
+    string[] roles = { "Admin", "Athlete" };
+
+    foreach (var role in roles)
+    {
+        if (!await roleManager.RoleExistsAsync(role))
+            await roleManager.CreateAsync(new IdentityRole(role));
+    }
+
+    var adminEmail = "shams@maratonic.com";
+    var adminUser = await userManager.FindByEmailAsync(adminEmail);
+
+    if (adminUser == null)
+    {
+        var newAdmin = new ApplicationUser
+        {
+            UserName = adminEmail,
+            Email = adminEmail,
+            FirstName = "Shams",
+            LastName = "Admin"
+        };
+
+        var createAdmin = await userManager.CreateAsync(newAdmin, "Admin123!");
+
+        if (createAdmin.Succeeded)
+        {
+            await userManager.AddToRoleAsync(newAdmin, "Admin");
+        }
+    }
+}
+
 app.Run();
+    

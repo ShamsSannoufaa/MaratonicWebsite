@@ -4,7 +4,6 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Maratonic.Core.Entities
 {
-    // Bileşik Tekil Kısıtlama Infrastructure'da tanımlanacak.
     [Table("Registrations")]
     public class Registration
     {
@@ -14,7 +13,8 @@ namespace Maratonic.Core.Entities
 
         // Foreign Keys
         [Required]
-        public int UserId { get; set; }
+        public string UserId { get; set; }  // <-- DÜZELTİLDİ
+
         [Required]
         public int RaceId { get; set; }
 
@@ -22,12 +22,12 @@ namespace Maratonic.Core.Entities
 
         public PaymentStatus PaymentStatus { get; set; } = PaymentStatus.Pending;
 
-        // Navigasyon Özellikleri
         [ForeignKey("UserId")]
-        public User User { get; set; }
+        public ApplicationUser User { get; set; }
+
         [ForeignKey("RaceId")]
         public Race Race { get; set; }
 
-        public Payment PaymentTransaction { get; set; } // Bire Bir ilişki
+        public Payment PaymentTransaction { get; set; }
     }
 }
