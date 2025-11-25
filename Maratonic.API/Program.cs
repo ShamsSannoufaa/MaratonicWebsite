@@ -1,28 +1,120 @@
-using Microsoft.EntityFrameworkCore; // AddDbContext için
-using Pomelo.EntityFrameworkCore.MySql.Infrastructure; // UseMySql ve ServerVersion için
+ï»¿using Microsoft.EntityFrameworkCore;
+using Maratonic.Infrastructure;
+using Maratonic.Core.Entities;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// ======================================================================
+// 1. SERVICES
+// ======================================================================
 
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+
+// Swagger + JWT Destek
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-// 1. Connection String'i okuma
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Maratonic API", Version = "v1" });
+
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        In = ParameterLocation.Header,
+        Description = "JWT token'Ä±nÄ±zÄ± 'Bearer <token>' ÅŸeklinde girin",
+        Name = "Authorization",
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer"
+    });
+
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
+
+// ======================================================================
+// DATABASE
+// ======================================================================
+
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
-// 2. DbContext'i servislere ekleme
-builder.Services.AddDbContext<Maratonic.Infrastructure.AppDbContext>(options =>
-    options.UseMySql(connectionString,
-        // MySQL sunucu sürümünüzü belirtin. (Genellikle 8.0)
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseMySql(
+        connectionString,
         ServerVersion.AutoDetect(connectionString)
     )
 );
 
+// ======================================================================
+// IDENTITY
+// ======================================================================
+
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
+    .AddEntityFrameworkStores<AppDbContext>()
+    .AddDefaultTokenProviders();
+
+// Identity password rules
+builder.Services.Configure<IdentityOptions>(options =>
+{
+    options.Password.RequireDigit = false;
+    options.Password.RequireUppercase = false;
+    options.Password.RequireLowercase = false;
+    options.Password.RequireNonAlphanumeric = false;
+    options.Password.RequiredLength = 6;
+});
+
+// ======================================================================
+// JWT AUTHENTICATION
+// ======================================================================
+
+var jwtSettings = builder.Configuration.GetSection("Jwt");
+var secretKey = jwtSettings["Secret"];
+
+if (string.IsNullOrEmpty(secretKey))
+    throw new Exception("âš  JWT Secret boÅŸ! appsettings.json kontrol et.");
+
+var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+
+        ValidIssuer = jwtSettings["Issuer"],
+        ValidAudience = jwtSettings["Audience"],
+        IssuerSigningKey = key
+    };
+});
+
+// ======================================================================
+// 2. MIDDLEWARE
+// ======================================================================
+
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -31,8 +123,48 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
 
+// ======================================================================
+// ROLE + ADMIN SEED
+// ======================================================================
+using (var scope = app.Services.CreateScope())
+{
+    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+
+    string[] roles = { "Admin", "Athlete" };
+
+    foreach (var role in roles)
+    {
+        if (!await roleManager.RoleExistsAsync(role))
+            await roleManager.CreateAsync(new IdentityRole(role));
+    }
+
+    var adminEmail = "shams@maratonic.com";
+    var adminUser = await userManager.FindByEmailAsync(adminEmail);
+
+    if (adminUser == null)
+    {
+        var newAdmin = new ApplicationUser
+        {
+            UserName = adminEmail,
+            Email = adminEmail,
+            FirstName = "Shams",
+            LastName = "Admin"
+        };
+
+        var createAdmin = await userManager.CreateAsync(newAdmin, "Admin123!");
+
+        if (createAdmin.Succeeded)
+        {
+            await userManager.AddToRoleAsync(newAdmin, "Admin");
+        }
+    }
+}
+
 app.Run();
+    

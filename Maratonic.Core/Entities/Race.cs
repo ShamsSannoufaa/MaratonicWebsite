@@ -27,14 +27,16 @@ namespace Maratonic.Core.Entities
 
         public RaceStatus Status { get; set; } = RaceStatus.Upcoming;
 
-        // Foreign Key
-        public int CreatedByUserId { get; set; }
-        [ForeignKey("CreatedByUserId")]
-        public User CreatedBy { get; set; }
+        // Foreign Key (Admin - IdentityUser PK = string)
+        [Required]
+        public string CreatedByUserId { get; set; }
+
+        [ForeignKey(nameof(CreatedByUserId))]
+        public ApplicationUser CreatedBy { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-        // Navigasyon Özellikleri
-        public ICollection<Registration> Registrations { get; set; }
+        // Navigation Property
+        public ICollection<Registration> Registrations { get; set; } = new List<Registration>();
     }
 }

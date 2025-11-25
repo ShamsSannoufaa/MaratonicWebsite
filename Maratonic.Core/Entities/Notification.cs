@@ -10,17 +10,21 @@ namespace Maratonic.Core.Entities
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int NotificationId { get; set; }
 
-        // Foreign Key
+        // Foreign Key (Identity User → string Id)
         [Required]
-        public int UserId { get; set; }
+        public string UserId { get; set; }  // <-- int → string yapıldı
+
         [ForeignKey("UserId")]
-        public User User { get; set; }
+        public ApplicationUser User { get; set; }
 
         [Required]
         public string Type { get; set; }
+
         public string Subject { get; set; }
         public string Body { get; set; }
+
         public DateTime? SentAt { get; set; }
+
         public bool IsSent { get; set; } = false;
     }
 }
