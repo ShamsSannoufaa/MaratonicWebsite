@@ -1,5 +1,4 @@
-﻿using Maratonic.Core.Enums;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Maratonic.Core.Entities
@@ -8,26 +7,17 @@ namespace Maratonic.Core.Entities
     public class Registration
     {
         [Key]
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public int RegistrationId { get; set; }
+        public int Id { get; set; }
 
-        // Foreign Keys
-        [Required]
-        public string UserId { get; set; }  // <-- DÜZELTİLDİ
-
-        [Required]
-        public int RaceId { get; set; }
-
-        public DateTime RegistrationDate { get; set; } = DateTime.UtcNow;
-
-        public PaymentStatus PaymentStatus { get; set; } = PaymentStatus.Pending;
-
-        [ForeignKey("UserId")]
+        public string UserId { get; set; }
         public ApplicationUser User { get; set; }
 
-        [ForeignKey("RaceId")]
+        public int RaceId { get; set; }
         public Race Race { get; set; }
 
-        public Payment PaymentTransaction { get; set; }
+        // 1-1 Payment
+        public Payment? PaymentTransaction { get; set; }
+
+        public int Status { get; set; }
     }
 }

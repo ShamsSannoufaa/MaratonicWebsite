@@ -1,11 +1,15 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Maratonic.Core.Entities;
+using Maratonic.Core.Interfaces;
 using Maratonic.Infrastructure;
-using Maratonic.Core.Entities;
-using Microsoft.AspNetCore.Identity;
+using Maratonic.Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
+
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -66,6 +70,10 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
     .AddEntityFrameworkStores<AppDbContext>()
     .AddDefaultTokenProviders();
+
+// SERVICES
+builder.Services.AddScoped<IPaymentsService, PaymentsService>();
+
 
 // Identity password rules
 builder.Services.Configure<IdentityOptions>(options =>

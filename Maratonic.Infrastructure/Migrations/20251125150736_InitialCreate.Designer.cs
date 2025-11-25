@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Maratonic.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251125100225_InitialCreate")]
+    [Migration("20251125150736_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -134,31 +134,38 @@ namespace Maratonic.Infrastructure.Migrations
 
             modelBuilder.Entity("Maratonic.Core.Entities.Payment", b =>
                 {
-                    b.Property<int>("PaymentId")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
                     b.Property<decimal>("Amount")
-                        .HasColumnType("decimal(18, 2)");
+                        .HasColumnType("decimal(65,30)");
 
-                    b.Property<bool>("IsSuccessful")
-                        .HasColumnType("tinyint(1)");
-
-                    b.Property<DateTime>("PaymentDate")
+                    b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)");
+
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasColumnType("longtext");
 
                     b.Property<string>("ProviderResponse")
                         .IsRequired()
                         .HasColumnType("longtext");
 
+                    b.Property<DateTime?>("RefundedAt")
+                        .HasColumnType("datetime(6)");
+
                     b.Property<int>("RegistrationId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Status")
                         .HasColumnType("int");
 
                     b.Property<string>("TransactionId")
                         .IsRequired()
                         .HasColumnType("varchar(255)");
 
-                    b.HasKey("PaymentId");
+                    b.HasKey("Id");
 
                     b.HasIndex("RegistrationId")
                         .IsUnique();
@@ -215,24 +222,21 @@ namespace Maratonic.Infrastructure.Migrations
 
             modelBuilder.Entity("Maratonic.Core.Entities.Registration", b =>
                 {
-                    b.Property<int>("RegistrationId")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    b.Property<int>("PaymentStatus")
                         .HasColumnType("int");
 
                     b.Property<int>("RaceId")
                         .HasColumnType("int");
 
-                    b.Property<DateTime>("RegistrationDate")
-                        .HasColumnType("datetime(6)");
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
 
                     b.Property<string>("UserId")
                         .IsRequired()
                         .HasColumnType("varchar(255)");
 
-                    b.HasKey("RegistrationId");
+                    b.HasKey("Id");
 
                     b.HasIndex("RaceId");
 

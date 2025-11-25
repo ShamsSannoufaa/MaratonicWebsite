@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Maratonic.Core.Enums;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Maratonic.Core.Entities
@@ -8,26 +9,21 @@ namespace Maratonic.Core.Entities
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public int PaymentId { get; set; }
+        public int Id { get; set; }
 
-        // Foreign Key
-        [Required]
         public int RegistrationId { get; set; }
-
-        [ForeignKey("RegistrationId")]
         public Registration Registration { get; set; }
 
-        [Required]
-        [Column(TypeName = "decimal(18, 2)")]
         public decimal Amount { get; set; }
 
-        [Required]
-        public string TransactionId { get; set; } // Unique index Infrastructure’da oluşturulacak
+        public string Provider { get; set; } = string.Empty;
+        public string TransactionId { get; set; } = string.Empty;
+        public string ProviderResponse { get; set; } = string.Empty;
 
-        public DateTime PaymentDate { get; set; } = DateTime.UtcNow;
+        public PaymentStatus Status { get; set; } = PaymentStatus.Pending;
 
-        public string ProviderResponse { get; set; }
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-        public bool IsSuccessful { get; set; } = false;
+        public DateTime? RefundedAt { get; set; }
     }
 }
