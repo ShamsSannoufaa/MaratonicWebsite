@@ -1,0 +1,14 @@
+# Backend
+Backend/bin/
+Backend/obj/
+Backend/.vs/
+
+# Frontend
+Frontend/maratonic-frontend/node_modules/
+Frontend/maratonic-frontend/.angular/
+Frontend/maratonic-frontend/dist/
+
+# General
+*.user
+*.tmp
+*.log
